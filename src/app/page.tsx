@@ -162,7 +162,7 @@ export default function SunsetClock() {
       </div>
 
       {/* Clock Mode Selector */}
-      <div className="absolute bottom-4 right-4 z-20">
+      <div className="absolute top-4 right-36 z-20">
         <select
           value={clockMode}
           onChange={(e) => setClockMode(e.target.value as ClockMode)}
