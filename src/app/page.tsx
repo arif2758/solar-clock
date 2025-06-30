@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 
 type Mode = "auto" | "day" | "night";
@@ -9,6 +10,13 @@ export default function SunsetClock() {
   const [clockMode, setClockMode] = useState<ClockMode>("solar");
   const [currentBg, setCurrentBg] = useState<string>("");
   const [location, setLocation] = useState<string>("");
+  const [statusMessage, setStatusMessage] = useState<string>(
+    "Getting your location..."
+  );
+  const [timeLeftText, setTimeLeftText] = useState<string>(
+    "Calculating time left..."
+  );
+  const [clockText, setClockText] = useState<string>("Loading...");
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const sunsetTimeRef = useRef<Date | null>(null);
@@ -19,20 +27,23 @@ export default function SunsetClock() {
       if (!sunsetTime) return;
 
       const now = new Date();
-      const clock = document.getElementById("clock");
-      const timeLeft = document.getElementById("time-left");
 
       if (clockMode === "real") {
-        if (clock) clock.textContent = now.toLocaleTimeString();
+        setClockText(now.toLocaleTimeString());
       } else {
         const adjustedSunset = new Date(sunsetTime);
-        if (now < sunsetTime) adjustedSunset.setDate(adjustedSunset.getDate() - 1);
+        if (now < sunsetTime)
+          adjustedSunset.setDate(adjustedSunset.getDate() - 1);
         const sinceSunset = now.getTime() - adjustedSunset.getTime();
         const sh = Math.floor(sinceSunset / 3600_000) % 24;
         const sm = Math.floor((sinceSunset % 3600_000) / 60_000);
         const ss = Math.floor((sinceSunset % 60_000) / 1000);
-        if (clock)
-          clock.textContent = `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+        setClockText(
+          `${String(sh).padStart(2, "0")}:${String(sm).padStart(
+            2,
+            "0"
+          )}:${String(ss).padStart(2, "0")}`
+        );
       }
 
       const timeLeftMs = sunsetTime.getTime() - now.getTime();
@@ -40,37 +51,36 @@ export default function SunsetClock() {
         const lh = Math.floor(timeLeftMs / 3600_000);
         const lm = Math.floor((timeLeftMs % 3600_000) / 60_000);
         const ls = Math.floor((timeLeftMs % 60_000) / 1000);
-        if (timeLeft)
-          timeLeft.textContent = `🌇 Sunset in: ${lh}h ${lm}m ${ls}s`;
+        setTimeLeftText(`🌇 Sunset in: ${lh}h ${lm}m ${ls}s`);
       } else {
-        if (timeLeft) timeLeft.textContent = `🌙 Sunset already passed today.`;
+        setTimeLeftText(`🌙 Sunset already passed today.`);
       }
     };
 
     const fetchSunsetTime = (lat: number, lng: number) => {
-      fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`)
+      fetch(
+        `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`
+      )
         .then((res) => res.json())
         .then((data) => {
           sunsetTimeRef.current = new Date(data.results.sunset);
-          const status = document.getElementById("status");
-          if (status)
-            status.textContent = `🌅 Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`;
-
+          setStatusMessage(
+            `🌅 Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`
+          );
           updateClock();
           if (intervalRef.current) clearInterval(intervalRef.current);
           intervalRef.current = setInterval(updateClock, 1000);
         })
-        .catch(() => {
-          const status = document.getElementById("status");
-          if (status) status.textContent = "⚠️ Failed to load sunset time.";
-        });
+        .catch(() => setStatusMessage("⚠️ Failed to load sunset time."));
     };
 
     const getCity = () => {
       fetch("https://ipwho.is/")
         .then((res) => res.json())
         .then((data) => {
-          setLocation(data.success ? `${data.city}, ${data.country}` : "Unknown Location");
+          setLocation(
+            data.success ? `${data.city}, ${data.country}` : "Unknown Location"
+          );
         })
         .catch(() => setLocation("Unknown Location"));
     };
@@ -92,17 +102,16 @@ export default function SunsetClock() {
     const init = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => fetchSunsetTime(pos.coords.latitude, pos.coords.longitude),
-        () => {
-          const status = document.getElementById("status");
-          if (status) status.textContent = "🚫 Location access denied.";
-        }
+        () => setStatusMessage("🚫 Location access denied.")
       );
       getCity();
       createStars(100);
     };
 
     init();
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [clockMode]);
 
   useEffect(() => {
@@ -111,13 +120,17 @@ export default function SunsetClock() {
       if (hour >= 6 && hour < 17)
         setCurrentBg("bg-gradient-to-br from-blue-200/40 to-white/10");
       else if (hour >= 17 && hour < 19)
-        setCurrentBg("bg-gradient-to-br from-orange-400/50 via-pink-400/40 to-purple-500/30");
+        setCurrentBg(
+          "bg-gradient-to-br from-cyan-400/50 via-blue-400/40 to-purple-green/30"
+        );
       else
-        setCurrentBg("bg-gradient-to-br from-gray-900/90 via-gray-800/70 to-black/80");
+        setCurrentBg(
+          "bg-gradient-to-br from-gray-900/90 via-gray-800/70 to-black/80"
+        );
     } else if (mode === "day") {
       setCurrentBg("bg-gradient-to-br from-blue-200/40 to-white/10");
     } else if (mode === "night") {
-      setCurrentBg("bg-gradient-to-br from-gray-900/90 via-gray-800/70 to-black/80");
+      setCurrentBg("night-radial-bg");
     }
   }, [mode]);
 
@@ -126,16 +139,23 @@ export default function SunsetClock() {
       className={`relative flex flex-col items-center justify-center h-screen overflow-hidden ${currentBg} text-gray-100 backdrop-blur-2xl transition-all duration-1000`}
     >
       {/* Stars */}
-      <div id="stars-container" className="absolute inset-0 z-0 overflow-hidden" />
+      <div
+        id="stars-container"
+        className="absolute inset-0 z-0 overflow-hidden"
+      />
 
       {/* Mode Selector */}
       <div className="absolute top-4 right-4 z-20">
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as Mode)}
-          className="bg-white/30 text-gray-900 text-sm border border-white/30 rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-white/50"
+          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
+            mode === "night"
+              ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
+              : "bg-white/30 text-gray-900  focus:ring-white/50"
+          }`}
         >
-          <option value="auto">🌓 Auto</option>
+          <option value="auto"> 🌓 Auto</option>
           <option value="day">🌞 Day</option>
           <option value="night">🌙 Night</option>
         </select>
@@ -146,7 +166,11 @@ export default function SunsetClock() {
         <select
           value={clockMode}
           onChange={(e) => setClockMode(e.target.value as ClockMode)}
-          className="bg-white/30 text-gray-900 text-sm border border-white/30 rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-white/50"
+          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
+            mode === "night"
+              ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
+              : "bg-white/30 text-gray-900  focus:ring-white/50"
+          }`}
         >
           <option value="solar">⏳ Solar Clock</option>
           <option value="real">🕰️ Real Clock</option>
@@ -154,40 +178,63 @@ export default function SunsetClock() {
       </div>
 
       {/* Location */}
-      <div className="absolute top-4 left-4 z-20 text-sm text-gray-700">
-       📌 {location || "Detecting..."}
+      <div
+        className={`absolute top-4 left-4 z-20 text-sm ${
+          mode === "night" ? "text-gray-200" : "text-gray-700"
+        }`}
+      >
+        📌 {location || "Detecting..."}
       </div>
 
       {/* Title */}
-      <h1 className="text-4xl md:text-5xl font-extrabold z-10 mb-6 text-center tracking-tight drop-shadow-xl bg-gradient-to-r from-[#031919]  to-[#02889c] bg-clip-text text-transparent">
+      <h1
+        className={`text-4xl md:text-5xl font-extrabold z-10 mb-6 text-center tracking-tight drop-shadow-xl ${
+          mode === "night"
+            ? "bg-gradient-to-r from-[#b8fdfd] to-[#03dbfc] bg-clip-text text-transparent"
+            : "bg-gradient-to-r from-[#031919] to-[#02889c] bg-clip-text text-transparent"
+        }`}
+      >
         DevRatul Solar Clock
       </h1>
 
       {/* Clock */}
       <div
         id="clock"
-        className="text-6xl md:text-7xl font-bold tracking-widest px-8 py-4 rounded-3xl bg-white/10 backdrop-blur-lg shadow-2xl z-10 text-gray-600 text-center border border-white/10"
+        className={`text-6xl md:text-7xl font-bold tracking-widest px-8 py-4 rounded-3xl backdrop-blur-lg shadow-2xl z-10 text-center border border-white/10 ${
+          mode === "night" ? "text-gray-100" : "text-gray-950"
+        }`}
       >
-        Loading...
+        {clockText}
       </div>
 
       {/* Time Left */}
       <div
         id="time-left"
-        className="mt-4 text-lg md:text-2xl text-gray-950 z-10 text-center"
+        className={`mt-4 text-lg md:text-2xl z-10 text-center font-semibold ${
+          mode === "night" ? "text-gray-200" : "text-gray-900"
+        }`}
       >
-        Calculating time left...
+        {timeLeftText}
       </div>
 
       {/* Status */}
       <div
         id="status"
-        className="mt-2  md:text-xl text-gray-950 z-10 text-center italic"
+        className={`mt-2 md:text-xl z-10 text-center italic font-medium ${
+          mode === "night" ? "text-gray-100" : "text-gray-950"
+        }`}
       >
-        Getting your location...
+        {statusMessage}
       </div>
 
       <style jsx>{`
+        .night-radial-bg {
+          background-image: radial-gradient(circle at center, #031919, #000c0c);
+          background-size: cover;
+          background-repeat: no-repeat;
+        }
+
+        ,
         .star {
           position: absolute;
           width: 2px;
@@ -198,8 +245,15 @@ export default function SunsetClock() {
           animation: twinkle 2s infinite ease-in-out alternate;
         }
         @keyframes twinkle {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.9; transform: scale(1.5); }
+          0%,
+          100% {
+            opacity: 0.1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.9;
+            transform: scale(1.5);
+          }
         }
       `}</style>
     </div>
