@@ -148,7 +148,7 @@ export default function SunsetClock() {
       </div>
 
       {/* Real Clock */}
-      <div className="absolute top-4 right-36 z-20">
+      <div className="absolute top-4 right-32 z-20">
         <div
           className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md ${
             mode === "night"
@@ -162,7 +162,7 @@ export default function SunsetClock() {
 
       {/* Location */}
       <div
-        className={`absolute top-4 left-4 z-20 text-sm ${
+        className={`absolute bottom-4 left-4 z-20 text-sm ${
           mode === "night" ? "text-gray-200" : "text-gray-700"
         }`}
       >
