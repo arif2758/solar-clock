@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 type Mode = "auto" | "day" | "night";
-type ClockMode = "solar" | "real";
+
 
 export default function SunsetClock() {
-  const [mode, setMode] = useState<Mode>("auto");
-  const [clockMode, setClockMode] = useState<ClockMode>("solar");
+  const [mode, setMode] = useState<Mode>("night");
+
   const [currentBg, setCurrentBg] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>(
@@ -17,6 +17,7 @@ export default function SunsetClock() {
     "Calculating time left..."
   );
   const [clockText, setClockText] = useState<string>("Loading...");
+  const [realClockText, setRealClockText] = useState<string>("Loading...");
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const sunsetTimeRef = useRef<Date | null>(null);
@@ -27,31 +28,27 @@ export default function SunsetClock() {
       if (!sunsetTime) return;
 
       const now = new Date();
+      setRealClockText(now.toLocaleTimeString());
 
-      if (clockMode === "real") {
-        setClockText(now.toLocaleTimeString());
-      } else {
-        const adjustedSunset = new Date(sunsetTime);
-        if (now < sunsetTime)
-          adjustedSunset.setDate(adjustedSunset.getDate() - 1);
-        const sinceSunset = now.getTime() - adjustedSunset.getTime();
-        const sh = Math.floor(sinceSunset / 3600_000) % 24;
-        const sm = Math.floor((sinceSunset % 3600_000) / 60_000);
-        const ss = Math.floor((sinceSunset % 60_000) / 1000);
-        setClockText(
-          `${String(sh).padStart(2, "0")}:${String(sm).padStart(
-            2,
-            "0"
-          )}:${String(ss).padStart(2, "0")}`
-        );
-      }
+      const adjustedSunset = new Date(sunsetTime);
+      if (now < sunsetTime)
+        adjustedSunset.setDate(adjustedSunset.getDate() - 1);
+      const sinceSunset = now.getTime() - adjustedSunset.getTime();
+      const sh = Math.floor(sinceSunset / 3600_000) % 24;
+      const sm = Math.floor((sinceSunset % 3600_000) / 60_000);
+      const ss = Math.floor((sinceSunset % 60_000) / 1000);
+      setClockText(
+        `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}:${String(
+          ss
+        ).padStart(2, "0")}`
+      );
 
       const timeLeftMs = sunsetTime.getTime() - now.getTime();
       if (timeLeftMs > 0) {
         const lh = Math.floor(timeLeftMs / 3600_000);
         const lm = Math.floor((timeLeftMs % 3600_000) / 60_000);
         const ls = Math.floor((timeLeftMs % 60_000) / 1000);
-        setTimeLeftText(`🌇 Sunset in: ${lh}h ${lm}m ${ls}s`);
+        setTimeLeftText(`Sunset in: ${lh}h ${lm}m ${ls}s`);
       } else {
         setTimeLeftText(`🌙 Sunset already passed today.`);
       }
@@ -65,7 +62,7 @@ export default function SunsetClock() {
         .then((data) => {
           sunsetTimeRef.current = new Date(data.results.sunset);
           setStatusMessage(
-            `🌅 Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`
+            ` Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`
           );
           updateClock();
           if (intervalRef.current) clearInterval(intervalRef.current);
@@ -112,22 +109,10 @@ export default function SunsetClock() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [clockMode]);
+  }, []);
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (mode === "auto") {
-      if (hour >= 6 && hour < 17)
-        setCurrentBg("bg-gradient-to-br from-blue-200/40 to-white/10");
-      else if (hour >= 17 && hour < 19)
-        setCurrentBg(
-          "bg-gradient-to-br from-cyan-400/50 via-blue-400/40 to-purple-green/30"
-        );
-      else
-        setCurrentBg(
-          "bg-gradient-to-br from-gray-900/90 via-gray-800/70 to-black/80"
-        );
-    } else if (mode === "day") {
+    if (mode === "day") {
       setCurrentBg("bg-gradient-to-br from-blue-200/40 to-white/10");
     } else if (mode === "night") {
       setCurrentBg("night-radial-bg");
@@ -155,7 +140,6 @@ export default function SunsetClock() {
               : "bg-white/30 text-gray-900  focus:ring-white/50"
           }`}
         >
-          <option value="auto"> 🌓 Auto</option>
           <option value="day">🌞 Day</option>
           <option value="night">🌙 Night</option>
         </select>
@@ -163,18 +147,18 @@ export default function SunsetClock() {
 
       {/* Clock Mode Selector */}
       <div className="absolute top-4 right-36 z-20">
-        <select
-          value={clockMode}
-          onChange={(e) => setClockMode(e.target.value as ClockMode)}
-          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
-            mode === "night"
-              ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
-              : "bg-white/30 text-gray-900  focus:ring-white/50"
-          }`}
-        >
-          <option value="solar">⏳ Solar Clock</option>
-          <option value="real">🕰️ Real Clock</option>
-        </select>
+        {
+          <div
+            className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
+              mode === "night"
+                ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
+                : "bg-white/30 text-gray-900  focus:ring-white/50"
+            }`}
+          >
+            {" "}
+            {realClockText}
+          </div>
+        }
       </div>
 
       {/* Location */}
@@ -210,9 +194,7 @@ export default function SunsetClock() {
       {/* Time Left */}
       <div
         id="time-left"
-        className={`mt-4 text-lg md:text-2xl z-10 text-center font-semibold ${
-          mode === "night" ? "text-gray-200" : "text-gray-900"
-        }`}
+        className={`mt-4 text-lg md:text-xl z-10 text-center font-semibold text-[#ff5c00]`}
       >
         {timeLeftText}
       </div>
@@ -220,7 +202,7 @@ export default function SunsetClock() {
       {/* Status */}
       <div
         id="status"
-        className={`mt-2 md:text-xl z-10 text-center italic font-medium ${
+        className={`mt-2 md:text-sm z-10 text-center  font-medium ${
           mode === "night" ? "text-gray-100" : "text-gray-950"
         }`}
       >
