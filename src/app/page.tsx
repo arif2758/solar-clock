@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Mode = "auto" | "day" | "night";
-
+type Mode = "day" | "night";
 
 export default function SunsetClock() {
   const [mode, setMode] = useState<Mode>("night");
-
   const [currentBg, setCurrentBg] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>(
@@ -33,25 +31,29 @@ export default function SunsetClock() {
       const adjustedSunset = new Date(sunsetTime);
       if (now < sunsetTime)
         adjustedSunset.setDate(adjustedSunset.getDate() - 1);
+
       const sinceSunset = now.getTime() - adjustedSunset.getTime();
       const sh = Math.floor(sinceSunset / 3600_000) % 24;
       const sm = Math.floor((sinceSunset % 3600_000) / 60_000);
       const ss = Math.floor((sinceSunset % 60_000) / 1000);
+
       setClockText(
         `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}:${String(
           ss
         ).padStart(2, "0")}`
       );
 
-      const timeLeftMs = sunsetTime.getTime() - now.getTime();
-      if (timeLeftMs > 0) {
-        const lh = Math.floor(timeLeftMs / 3600_000);
-        const lm = Math.floor((timeLeftMs % 3600_000) / 60_000);
-        const ls = Math.floor((timeLeftMs % 60_000) / 1000);
-        setTimeLeftText(`Sunset in: ${lh}h ${lm}m ${ls}s`);
-      } else {
-        setTimeLeftText(`🌙 Sunset already passed today.`);
-      }
+      const nextSunset = new Date(sunsetTime);
+      if (now > sunsetTime) nextSunset.setDate(nextSunset.getDate() + 1);
+
+      const timeLeftMs = nextSunset.getTime() - now.getTime();
+      const lh = Math.floor(timeLeftMs / 3600_000);
+      const lm = Math.floor((timeLeftMs % 3600_000) / 60_000);
+      const ls = Math.floor((timeLeftMs % 60_000) / 1000);
+
+      setTimeLeftText(`Sunset in: ${lh}h ${lm}m ${ls}s`);
+       // ⭐️ এখানে টাইম ট্যাবে দেখাবে:
+  // document.title = `Sunset in: ${lh}h ${lm}m ${ls}s`;
     };
 
     const fetchSunsetTime = (lat: number, lng: number) => {
@@ -62,7 +64,7 @@ export default function SunsetClock() {
         .then((data) => {
           sunsetTimeRef.current = new Date(data.results.sunset);
           setStatusMessage(
-            ` Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`
+            `Sunset Time: ${sunsetTimeRef.current.toLocaleTimeString()}`
           );
           updateClock();
           if (intervalRef.current) clearInterval(intervalRef.current);
@@ -112,11 +114,11 @@ export default function SunsetClock() {
   }, []);
 
   useEffect(() => {
-    if (mode === "day") {
-      setCurrentBg("bg-gradient-to-br from-blue-200/40 to-white/10");
-    } else if (mode === "night") {
-      setCurrentBg("night-radial-bg");
-    }
+    setCurrentBg(
+      mode === "day"
+        ? "bg-gradient-to-br from-blue-200/40 to-white/10"
+        : "night-radial-bg"
+    );
   }, [mode]);
 
   return (
@@ -134,10 +136,10 @@ export default function SunsetClock() {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as Mode)}
-          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
+          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none ${
             mode === "night"
-              ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
-              : "bg-white/30 text-gray-900  focus:ring-white/50"
+              ? "!bg-gray-700 text-gray-100"
+              : "bg-white/30 text-gray-900"
           }`}
         >
           <option value="day">🌞 Day</option>
@@ -145,20 +147,17 @@ export default function SunsetClock() {
         </select>
       </div>
 
-      {/* Clock Mode Selector */}
+      {/* Real Clock */}
       <div className="absolute top-4 right-36 z-20">
-        {
-          <div
-            className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md focus:outline-none focus:ring-2 ${
-              mode === "night"
-                ? "!bg-gray-700 text-gray-100  focus:ring-white/50"
-                : "bg-white/30 text-gray-900  focus:ring-white/50"
-            }`}
-          >
-            {" "}
-            {realClockText}
-          </div>
-        }
+        <div
+          className={`text-sm rounded-md px-3 py-1 shadow backdrop-blur-md ${
+            mode === "night"
+              ? "!bg-gray-700 text-gray-100"
+              : "bg-white/30 text-gray-900"
+          }`}
+        >
+          🕒 {realClockText}
+        </div>
       </div>
 
       {/* Location */}
@@ -194,7 +193,7 @@ export default function SunsetClock() {
       {/* Time Left */}
       <div
         id="time-left"
-        className={`mt-4 text-lg md:text-xl z-10 text-center font-semibold text-[#ff5c00]`}
+        className="mt-4 text-lg md:text-xl z-10 text-center font-semibold text-[#ff5c00]"
       >
         {timeLeftText}
       </div>
@@ -202,11 +201,18 @@ export default function SunsetClock() {
       {/* Status */}
       <div
         id="status"
-        className={`mt-2 md:text-sm z-10 text-center  font-medium ${
+        className={`mt-2 md:text-sm z-10 text-center font-medium ${
           mode === "night" ? "text-gray-100" : "text-gray-950"
         }`}
       >
-        {statusMessage}
+        {statusMessage.startsWith("Sunset Time:") ? (
+          <>
+            <span className="text-orange-400">Sunset Time:</span>
+            {statusMessage.replace("Sunset Time:", "")}
+          </>
+        ) : (
+          statusMessage
+        )}
       </div>
 
       <style jsx>{`
@@ -216,7 +222,6 @@ export default function SunsetClock() {
           background-repeat: no-repeat;
         }
 
-        ,
         .star {
           position: absolute;
           width: 2px;
@@ -226,6 +231,7 @@ export default function SunsetClock() {
           opacity: 0.8;
           animation: twinkle 2s infinite ease-in-out alternate;
         }
+
         @keyframes twinkle {
           0%,
           100% {
