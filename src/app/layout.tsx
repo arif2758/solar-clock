@@ -65,7 +65,34 @@ export default function RootLayout({
         />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="icon" href="/icon-192x192.jpg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon-192x192.jpg" />
+
         <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        {/* iPhone 14 Pro Max  */}
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 430px) and (device-height: 932px)"
+          href="/og-solar-clock.jpg"
+        />
+
+        {/* iPhone 12, 13, 14  */}
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 390px) and (device-height: 844px)"
+          href="/og-solar-clock.jpg"
+        />
+
+        {/* iPhone SE  */}
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 375px) and (device-height: 667px)"
+          href="/og-solar-clock.jpg"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
